@@ -13,15 +13,15 @@ import unittest, sys, os
 from abc import ABCMeta, abstractmethod
 
 # plugin imports
-sys.path.append(os.pardir) # required to be able to do "from plugin import xxx"
-import plugin.model_part as py_model_part
+import ks_plugin.model_part as py_model_part
 
-# other imports
-try:
+# tests imports
+from testing_utilities import CheckIfKratosAvailable
+
+# Kratos import
+kratos_available = CheckIfKratosAvailable()
+if kratos_available:
     import KratosMultiphysics as KM
-    kratos_available = True
-except:
-    kratos_available = False
 
 
 """This set of tests makes sure that the python-version of the ModelPart
@@ -303,7 +303,7 @@ class TestModelPart(object):
             self.assertEqual(self.model_part.GetCondition(1).Id, 1)
             self.assertEqual(len(self.model_part.Conditions), 1)
 
-            self.model_part.CreateNewCondition("Condition2D", 2000, [2,3], self.model_part.Properties[1])
+            self.model_part.CreateNewCondition("LineCondition2D2N", 2000, [2,3], self.model_part.Properties[1])
 
             for cond_id, cond in zip([1,2000], self.model_part.Conditions):
                 self.assertEqual(cond_id, cond.Id) # this works bcs the container is ordered!
@@ -424,14 +424,15 @@ class TestModelPart(object):
             n3 = model_part2.CreateNewNode(3,2.0,3.1,0.2)
             n4 = model_part2.CreateNewNode(4,2.0,3.1,10.2)
 
-            self.model_part.CreateNewProperties(1)
-            model_part2.CreateNewProperties(1)
+            self.model_part.CreateNewProperties(2)
+            model_part2.CreateNewProperties(5)
 
-            self.model_part.CreateNewElement("Element2D2N", 1, [1,2], sub1.GetProperties(1, 0))
-            self.model_part.CreateNewElement("Element2D2N", 2, [1,2], sub1.GetProperties(1, 0))
+            self.model_part.CreateNewElement("Element2D2N", 1, [1,2], sub1.GetProperties(2, 0))
+            self.model_part.CreateNewElement("Element2D2N", 2, [1,2], sub1.GetProperties(2, 0))
 
-            e1 = model_part2.CreateNewElement("Element2D2N", 1, [3,4], model_part2.GetProperties(1,0))
-            e3 = model_part2.CreateNewElement("Element2D2N", 3, [3,4], model_part2.GetProperties(1,0))
+            e1 = model_part2.CreateNewElement("Element2D2N", 1, [3,4], model_part2.GetProperties(5,0))
+            self.assertEqual(5, e1.Properties.Id)
+            e3 = model_part2.CreateNewElement("Element2D2N", 3, [3,4], model_part2.GetProperties(5,0))
 
             #this should add condition 3 to both sub1 and self.model_part, but not to sub2
             sub1.AddElement(model_part2.Elements[3], 0)
@@ -443,9 +444,9 @@ class TestModelPart(object):
             with self.assertRaisesRegex(RuntimeError, " unfortunately a \(different\) element with the same Id already exists"):
                 sub2.AddElement(e1, 0)
 
-            e4 = model_part2.CreateNewElement("Element2D2N", 4, [1,3], model_part2.GetProperties(1,0))
-            e5 = model_part2.CreateNewElement("Element2D2N", 5, [1,3], model_part2.GetProperties(1,0))
-            e7 = model_part2.CreateNewElement("Element2D2N", 7, [1,3], model_part2.GetProperties(1,0))
+            e4 = model_part2.CreateNewElement("Element2D2N", 4, [1,3], model_part2.GetProperties(5,0))
+            e5 = model_part2.CreateNewElement("Element2D2N", 5, [1,3], model_part2.GetProperties(5,0))
+            e7 = model_part2.CreateNewElement("Element2D2N", 7, [1,3], model_part2.GetProperties(5,0))
 
             # here we test adding a list of elements at once
             #now add node 4 and 5 to the self.model_part by Id - here it fails since we did not yet add node 4
@@ -486,11 +487,12 @@ class TestModelPart(object):
             self.model_part.CreateNewProperties(1)
             model_part2.CreateNewProperties(1)
 
-            self.model_part.CreateNewCondition("Condition2D", 1, [1,2], sub1.GetProperties(1,0))
-            self.model_part.CreateNewCondition("Condition2D", 2, [1,2], sub1.GetProperties(1,0))
+            self.model_part.CreateNewCondition("LineCondition2D2N", 1, [1,2], sub1.GetProperties(1,0))
+            self.model_part.CreateNewCondition("LineCondition2D2N", 2, [1,2], sub1.GetProperties(1,0))
 
-            c1 = model_part2.CreateNewCondition("Condition3D", 1, [1,3,4], model_part2.GetProperties(1,0))
-            c3 = model_part2.CreateNewCondition("Condition3D", 3, [1,3,4], model_part2.GetProperties(1,0))
+            c1 = model_part2.CreateNewCondition("SurfaceCondition3D3N", 1, [1,3,4], model_part2.GetProperties(1,0))
+            self.assertEqual(1, c1.Properties.Id)
+            c3 = model_part2.CreateNewCondition("SurfaceCondition3D3N", 3, [1,3,4], model_part2.GetProperties(1,0))
 
             #this should add condition 3 to both sub1 and self.model_part, but not to sub2
             sub1.AddCondition(model_part2.Conditions[3], 0)
@@ -503,18 +505,18 @@ class TestModelPart(object):
                 sub2.AddCondition(c1)
 
             ##now we add two conditions at once
-            c4 = model_part2.CreateNewCondition("Condition3D", 4, [1,3,4], model_part2.GetProperties(1,0))
-            c5 = model_part2.CreateNewCondition("Condition3D", 5, [1,3,4], model_part2.GetProperties(1,0))
-            c13 = model_part2.CreateNewCondition("Condition3D", 13, [1,3,4], model_part2.GetProperties(1,0))
+            c4 = model_part2.CreateNewCondition("SurfaceCondition3D3N", 4, [1,3,4], model_part2.GetProperties(1,0))
+            c5 = model_part2.CreateNewCondition("SurfaceCondition3D3N", 5, [1,3,4], model_part2.GetProperties(1,0))
+            c13 = model_part2.CreateNewCondition("SurfaceCondition3D3N", 13, [1,3,4], model_part2.GetProperties(1,0))
 
             ### here we test adding a list of conditions at once
             #now add node 4 and 5 to the self.model_part by Id - here it fails since we did not yet add node 4
             with self.assertRaisesRegex(RuntimeError, "the condition with Id 4 does not exist in the root model part"):
                 sub1.AddConditions([4,5])
 
-            self.model_part.AddCondition(c4)
-            self.model_part.AddCondition(c5)
-            self.model_part.AddCondition(c13)
+            self.model_part.AddCondition(c4, 0)
+            self.model_part.AddCondition(c5, 0)
+            self.model_part.AddCondition(c13, 0)
 
             sub1.AddConditions([4,5]) #now it works, since we already added the conditions
             self.assertTrue(c4.Id in sub1.Conditions)
@@ -601,6 +603,36 @@ class TestModelPart(object):
             self.assertEqual(inlets_model_part.GetProperties(2, 0).Id, 2) # this will also add the properties with Id 2 to "inlets_model_part"
             self.assertTrue(inlets_model_part.HasProperties(2))
 
+        def test_loop_empty_containers(self):
+            # make sure looping "empty" containers works
+            # esp important for the py-version of the PointerVectorSet
+            node_counter = 0
+            elem_counter = 0
+            cond_counter = 0
+            prop_counter = 0
+            smp_counter  = 0
+
+            for _ in self.model_part.Nodes:
+                node_counter += 1
+
+            for _ in self.model_part.Elements:
+                elem_counter += 1
+
+            for _ in self.model_part.Conditions:
+                cond_counter += 1
+
+            for _ in self.model_part.Properties:
+                prop_counter += 1
+
+            for _ in self.model_part.SubModelParts:
+                smp_counter += 1
+
+            self.assertEqual(node_counter, 0)
+            self.assertEqual(elem_counter, 0)
+            self.assertEqual(cond_counter, 0)
+            self.assertEqual(prop_counter, 0)
+            self.assertEqual(smp_counter, 0)
+
 
 @unittest.skipUnless(kratos_available, "Kratos not available")
 class TestKratosModelPart(TestModelPart.BaseTests):
@@ -614,11 +646,7 @@ class TestPyKratosModelPart(TestModelPart.BaseTests):
 
     def test_properties_additional(self):
         with self.assertRaisesRegex(Exception, "Properties index not found: 212"):
-            self.model_part.GetProperties(212)
-
-    def test_Comparison(self):
-        # make sure the comparison is working fine, since this is used in other tests
-        self.skipTest("This test is not yet implemented!")
+            self.model_part.GetProperties(212) # Kratos also needs the Mesh-Index, this segfaults in Kratos as there is no Mesh with Id 212
 
 
 class TestDataValueContainer(object):
@@ -870,7 +898,7 @@ class TestPyKratosGeometricalObject(TestDataValueContainer.BaseTests):
         self.assertEqual(geom_obj_id, geom_obj.Id)
         self.assertEqual(geom_obj_name, geom_obj.name)
         self.assertListEqual(geom_obj_nodes, geom_obj.GetNodes())
-        self.assertEqual(geom_obj_props.Id, geom_obj.properties.Id)
+        self.assertEqual(geom_obj_props.Id, geom_obj.Properties.Id)
 
     def test_printing(self):
         geom_obj = self._CreateDataValueContainer()

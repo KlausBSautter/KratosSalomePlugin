@@ -12,8 +12,7 @@
 import unittest, sys, os
 
 # plugin imports
-sys.path.append(os.pardir) # required to be able to do "from plugin import xxx"
-from plugin.utilities import utils
+from ks_plugin.utilities import utils
 
 # tests imports
 import testing_utilities
@@ -24,7 +23,7 @@ if utils.IsExecutedInSalome():
     import GEOM
     import SMESH
     import salome_study
-    import plugin.utilities.salome_utilities as salome_utils
+    import ks_plugin.utilities.salome_utilities as salome_utils
 
 
 class TestSalomeTestCaseStudyCleaning(testing_utilities.SalomeTestCase):
@@ -239,6 +238,9 @@ class TestSalomeUtilities(testing_utilities.SalomeTestCaseWithBox):
     def test_GetEntityType(self):
         self.assertEqual(SMESH.Entity_Tetra, salome_utils.GetEntityType("Tetra"))
         self.assertEqual(SMESH.Entity_Quadrangle, salome_utils.GetEntityType("Quadrangle"))
+
+        with self.assertRaisesRegex(Exception, 'The requested entity type "WeirdGeometry" is not available!\nOnly the following entity types are available:\n'):
+            salome_utils.GetEntityType("WeirdGeometry")
 
 
 if __name__ == '__main__':

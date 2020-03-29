@@ -15,33 +15,10 @@ Check "salome_pluginsmanager.py" for more information
 '''
 
 # Initialize logging
-import os
-import logging
-from logging.handlers import RotatingFileHandler
-
-logger_level = 2 # default value: 0
-
-logger_levels = { 0 : logging.WARNING,
-                  1 : logging.INFO,
-                  2 : logging.DEBUG }
-
-# configuring the root logger, same configuration will be automatically used for other loggers
-root_logger = logging.getLogger()
-root_logger.setLevel(logger_levels[logger_level])
-root_logger.handlers.clear() # has to be cleared, otherwise more and more handlers are added if the plugin is reopened
-
-# logging to console - without timestamp
-ch = logging.StreamHandler()
-ch_formatter = logging.Formatter("KSP [%(levelname)8s] %(name)s : %(message)s")
-ch.setFormatter(ch_formatter)
-root_logger.addHandler(ch)
-
-# logging to file - with timestamp
-from utilities.utils import GetAbsPathInPlugin
-fh = RotatingFileHandler(os.path.join(GetAbsPathInPlugin(), "../plugin.log"), maxBytes=5*1024*1024, backupCount=1) # 5 MB
-fh_formatter = logging.Formatter("[%(asctime)s] [%(levelname)8s] %(name)s : %(message)s", "%Y-%m-%d %H:%M:%S")
-fh.setFormatter(fh_formatter)
-root_logger.addHandler(fh)
+import logging, os
+from ks_plugin.plugin_logging import InitializeLogging
+from ks_plugin.utilities.utils import GetAbsPathInPlugin
+InitializeLogging(log_file_path=os.path.join(GetAbsPathInPlugin(), os.pardir)) # log in root-dir
 
 logger = logging.getLogger(__name__)
 logger.debug('loading module')
@@ -58,16 +35,17 @@ def InitializePlugin(context):
     reload_modules = True # default value: False
 
     # python imports
-    import os
     import sys
     import logging
     logger = logging.getLogger(__name__)
 
     # plugin imports
-    from utilities import utils
-    from module_reload_order import MODULE_RELOAD_ORDER
-    import version
-    from utilities.salome_utilities import GetVersion as GetSalomeVersion
+    from ks_plugin.utilities import utils
+    from ks_plugin.module_reload_order import MODULE_RELOAD_ORDER
+    import ks_plugin.version as plugin_version
+    from ks_plugin.utilities import salome_utilities
+
+    # salome imports
     import qtsalome
 
     ### functions used in the plugin ###
@@ -80,6 +58,7 @@ def InitializePlugin(context):
         logger.debug("Starting to reload modules")
 
         for module_name in MODULE_RELOAD_ORDER:
+            module_name = 'ks_plugin.' + module_name # forcing that only things from the "ks_plugin" folder can be importet
             the_module = __import__(module_name, fromlist=[module_name[-1]])
 
             if sys.version_info < (3, 0): # python 2
@@ -109,8 +88,8 @@ def InitializePlugin(context):
     logger.info("Starting to initialize plugin\n")
 
     # logging configuration
-    logger.info('Salome version: {}'.format(GetSalomeVersion()))
-    logger.info('Plugin version: {}'.format(version.VERSION))
+    logger.info('Salome version: {}'.format(salome_utilities.GetVersion()))
+    logger.info('Plugin version: {}'.format(plugin_version.VERSION))
     logger.info('Operating system: {}'.format(sys.platform))
     logger.info('Plugin-Config: reinitialize_data_handler: {}'.format(reinitialize_data_handler))
     logger.info('Plugin-Config: reload_modules: {}'.format(reload_modules))
@@ -127,7 +106,7 @@ def InitializePlugin(context):
 
     # check if version of salome is among the checked versions
     # TODO this should only appear once, couple it with data-handler intialization
-    if not GetSalomeVersion() in version.TESTED_SALOME_VERSIONS:
+    if not salome_utilities.GetVersion() in plugin_version.TESTED_SALOME_VERSIONS:
         msg  = 'This Plugin is not tested with this version of Salome.\n'
         msg += 'The tested versions are:'
         for v in version.TESTED_SALOME_VERSIONS:
@@ -151,10 +130,10 @@ fct_args = [
 ]
 
 import salome_pluginsmanager
-from utilities.salome_utilities import GetVersion as GetSalomeVersion
-from utilities.utils import GetAbsPathInPlugin
+import ks_plugin.utilities.salome_utilities as salome_utils
+from ks_plugin.utilities.utils import GetAbsPathInPlugin
 
-if GetSalomeVersion() >= (9,3):
+if salome_utils.GetVersion() >= (9,3):
     fct_args.append(InitializePlugin)
     from qtsalome import QIcon
     icon_file = GetAbsPathInPlugin("utilities","kratos_logo.png")

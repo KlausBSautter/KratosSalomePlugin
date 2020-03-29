@@ -7,3 +7,28 @@
 #
 # Main authors: Philipp Bucher (https://github.com/philbucher)
 #
+
+# python imports
+from abc import ABCMeta, abstractmethod
+
+
+class Application(metaclass=ABCMeta):
+
+    ### public methods ###
+    @abstractmethod
+    def WriteCalculationFiles(self, path):
+        pass
+
+    @abstractmethod
+    def Serialize(self):
+        pass
+
+    @abstractmethod
+    def Deserialize(self, serialized_obj):
+        pass
+
+
+    # protected class methods ###
+    @classmethod
+    def _ClassName(cls):
+        return cls.__name__

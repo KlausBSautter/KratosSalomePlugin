@@ -1,6 +1,13 @@
 # ignoring the log files
 *.log*
 
+# excluding the example files
+tui_examples/**/*.mdpa
+tui_examples/**/*.hdf
+tui_examples/**/*.vtk
+
+
+##### FROM TEMPLATE: #####
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

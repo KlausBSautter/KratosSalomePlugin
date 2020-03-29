@@ -15,7 +15,7 @@ import copy
 logger = logging.getLogger(__name__)
 logger.debug('loading module')
 
-def _WriteHeaderMdpa(model_part, additional_header, file_stream):
+def _WriteHeaderMdpa(model_part, additional_header, write_creation_time, file_stream):
     def WriteSubModelPartInfo(model_part,
                               file_stream,
                               level):
@@ -29,8 +29,9 @@ def _WriteHeaderMdpa(model_part, additional_header, file_stream):
             file_stream.write("// {}Number of SubModelParts: {}\n".format(SPACE*level, smp.NumberOfSubModelParts()))
             WriteSubModelPartInfo(smp,file_stream, level+1)
 
-    localtime = time.asctime( time.localtime(time.time()) )
-    file_stream.write("// File created on " + localtime + "\n")
+    if write_creation_time:
+        localtime = time.asctime( time.localtime(time.time()) )
+        file_stream.write("// File created on " + localtime + "\n")
     if additional_header != "":
         file_stream.write("// {}\n".format(additional_header))
     file_stream.write("// Mesh Information:\n")
@@ -43,26 +44,28 @@ def _WriteHeaderMdpa(model_part, additional_header, file_stream):
     file_stream.write("\n")
 
 def _WriteNodesMdpa(nodes, file_stream):
-    file_stream.write("Begin Nodes\n")
-    precision = 10
-    for node in nodes:
-        file_stream.write('\t{0}\t{1:.{4}f}\t{2:.{4}f}\t{3:.{4}f}\n'.format(node.Id, node.X, node.Y, node.Z, precision))
-    file_stream.write("End Nodes\n\n")
+    if len(nodes) > 0:
+        file_stream.write("Begin Nodes\n")
+        precision = 10
+        for node in nodes:
+            file_stream.write('\t{0}\t{1:.{4}f}\t{2:.{4}f}\t{3:.{4}f}\n'.format(node.Id, node.X, node.Y, node.Z, precision))
+        file_stream.write("End Nodes\n\n")
 
 def _WriteEntitiesMdpa(entities, entities_name, file_stream):
-    current_entity_name = next(iter(entities)).name # get name of first entity
+    if len(entities) > 0:
+        current_entity_name = next(iter(entities)).name # get name of first entity
 
-    file_stream.write("Begin {}s {}\n".format(entities_name, current_entity_name))
+        file_stream.write("Begin {}s {}\n".format(entities_name, current_entity_name))
 
-    for entity in entities:
-        entity_name = entity.name
-        if entity_name != current_entity_name:
-            file_stream.write("End {}s // {}\n\n".format(entities_name, current_entity_name))
-            current_entity_name = entity_name
-            file_stream.write("Begin {}s {}\n".format(entities_name, current_entity_name))
+        for entity in entities:
+            entity_name = entity.name
+            if entity_name != current_entity_name:
+                file_stream.write("End {}s // {}\n\n".format(entities_name, current_entity_name))
+                current_entity_name = entity_name
+                file_stream.write("Begin {}s {}\n".format(entities_name, current_entity_name))
 
-        file_stream.write('\t{}\t{}\t{}\n'.format(entity.Id, entity.properties.Id, "\t".join([str(node.Id) for node in entity.GetNodes()])))
-    file_stream.write("End {}s // {}\n\n".format(entities_name, current_entity_name))
+            file_stream.write('\t{}\t{}\t{}\n'.format(entity.Id, entity.Properties.Id, "\t".join([str(node.Id) for node in entity.GetNodes()])))
+        file_stream.write("End {}s // {}\n\n".format(entities_name, current_entity_name))
 
 def __VariableFormatter(val):
     def ListToString(the_list):
@@ -160,7 +163,7 @@ def _WriteSubModelPartsMdpa(sub_model_part, file_stream, level=0):
     file_stream.write("{}End SubModelPart // {}\n".format("\t"*level, sub_model_part.Name))
 
 
-def WriteMdpa(model_part, file_name, additional_header=""):
+def WriteMdpa(model_part, file_name, additional_header="", write_creation_time=True):
     if not file_name.endswith(".mdpa"):
         file_name += ".mdpa"
 
@@ -168,7 +171,7 @@ def WriteMdpa(model_part, file_name, additional_header=""):
     start_time = time.time()
 
     with open(file_name, 'w') as mdpa_file:
-        _WriteHeaderMdpa(model_part, additional_header, mdpa_file)
+        _WriteHeaderMdpa(model_part, additional_header, write_creation_time, mdpa_file)
 
         if model_part.HasData():
             _WriteModelPartDataMdpa(model_part, mdpa_file)
