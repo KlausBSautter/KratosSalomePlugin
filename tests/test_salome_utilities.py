@@ -242,6 +242,47 @@ class TestSalomeUtilities(testing_utilities.SalomeTestCaseWithBox):
         with self.assertRaisesRegex(Exception, 'The requested entity type "WeirdGeometry" is not available!\nOnly the following entity types are available:\n'):
             salome_utils.GetEntityType("WeirdGeometry")
 
+    def test_SaveStudy_rel_path_name(self):
+        # this writes the file in the dir where the test is executed
+        self.__execute_test_SaveStudy("my_stufyf")
+
+    def test_SaveStudy_rel_path_full_name(self):
+        # this writes the file in the dir where the test is executed
+        self.__execute_test_SaveStudy("some_study.hdf")
+
+    def test_SaveStudy_abs_path_name(self):
+        # this writes the file in the top-dir of the Plugin
+        self.__execute_test_SaveStudy("my_stufyf")
+
+    def test_SaveStudy_abs_path_name(self):
+        # this writes the file in the top-dir of the Plugin
+        self.__execute_test_SaveStudy("my_stufyf")
+
+    def test_OpenStudy(self):
+        pass
+
+    def test_SaveAndReOpenStudy(self):
+        pass
+
+
+    def __execute_test_SaveStudy(self, file_name):
+        full_file_name = file_name
+
+        if not full_file_name.endswith(".hdf"):
+            full_file_name += "hdf"
+        if os.path.isfile(full_file_name):
+
+            os.remove(full_file_name)
+
+        self.assertFalse(os.path.isfile(full_file_name), 'Leftover file "{}" could not be removed!'.format(full_file_name))
+
+        salome_utils.SaveStudy(file_name)
+
+        self.assertTrue(os.path.isfile(full_file_name), 'File "{}" could not be written!'.format(full_file_name))
+
+        os.remove(full_file_name) #cleanup
+
+
 
 if __name__ == '__main__':
     unittest.main()

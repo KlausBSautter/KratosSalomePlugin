@@ -13,6 +13,7 @@
 # it depends on salome and can only be imported, if executed in Salome
 
 # python imports
+import os
 import logging
 logger = logging.getLogger(__name__)
 logger.debug('loading module')
@@ -78,3 +79,14 @@ def GetEntityType(name_entity_type):
 
 def GetSmesh():
     return smeshBuilder.New()
+
+def SaveStudy(file_name):
+    if not file_name.endswith("hdf"):
+        file_name += "hdf"
+    # TODO check return argument!
+    salome.myStudy.SaveAs(os.path.abspath(file_name), False, False) # args: use_multifile, use_acsii
+
+def OpenStudy(file_name):
+    # TODO what to do with the file ending?
+    # TODO do I need to check if another study is open and what is its status (unsaved etc??)
+    raise NotImplementedError
